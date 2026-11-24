@@ -1,0 +1,31 @@
+services:
+  mystgate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    env_file:
+      - ../.env
+    environment:
+      MYSTGATE_STATE_DIRECTORY: /data/state
+      MYSTGATE_LOG_DIRECTORY: /data/logs
+      MYSTGATE_COUNTRY: ${MYSTGATE_COUNTRY:-FR}
+      MYSTGATE_IP_TYPE: ${MYSTGATE_IP_TYPE:-residential}
+      MYSTGATE_HEALTH_INTERVAL: ${MYSTGATE_HEALTH_INTERVAL:-30}
+      MYSTGATE_MAX_FAILURES: ${MYSTGATE_MAX_FAILURES:-3}
+    ports:
+      - "127.0.0.1:1080:1080"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - mystgate_state:/data/state
+      - mystgate_logs:/data/logs
+    restart: unless-stopped
+
+volumes:
+  mystgate_state:
+  mystgate_logs:

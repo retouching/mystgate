@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$#" -ne 3 ]; then
+    echo "usage: task-brief <plan> <task id> <workspace>" >&2
+    exit 2
+fi
+
+plan=$1
+id=$2
+workspace=$3
+brief="$workspace/task-$id-brief.md"
+
+mkdir -p "$workspace"
+awk -v id="$id" '
+    /^```/ { fence = !fence }
+    !fence && /^#{2,3} Task [[:alnum:]]+:/ {
+        heading = $0
+        sub(/^#+ Task /, "", heading)
+        sub(/:.*/, "", heading)
+        if (inside) { exit }
+        if (heading == id) { inside = 1 }
+    }
+    !fence && inside && /^---$/ { exit }
+    inside { print }
+' "$plan" > "$brief"
+
+if [ ! -s "$brief" ]; then
+    rm -f "$brief"
+    echo "no task $id in $plan" >&2
+    exit 1
+fi
+echo "wrote $brief: $(wc -l < "$brief") lines"

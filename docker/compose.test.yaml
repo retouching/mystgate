@@ -1,0 +1,16 @@
+services:
+  mystgate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      MYSTGATE_STATE_DIRECTORY: /data/state
+      MYSTGATE_LOG_DIRECTORY: /data/logs
+      MYSTGATE_DEBUG: "true"
+      MYSTGATE_PROXY_USER: e2euser
+      MYSTGATE_PROXY_PASS: e2epass
+    tmpfs:
+      - /data/state:mode=0700
+      - /data/logs:mode=0700
+    entrypoint: ["sleep"]
+    command: ["infinity"]

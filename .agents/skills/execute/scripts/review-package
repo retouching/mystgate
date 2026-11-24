@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$#" -ne 3 ]; then
+    echo "usage: review-package <base> <head|index> <workspace>" >&2
+    exit 2
+fi
+
+base=$(git rev-parse --short "$1")
+if [ "$2" = "index" ]; then
+    head=$(git rev-parse --short "$(git write-tree)")
+    commits="(not committed: the tree of the index, $head)"
+    count="the index"
+else
+    head=$(git rev-parse --short "$2")
+    commits=$(git log --oneline "$base..$head" 2>/dev/null || echo "(tree $head)")
+    count="$(git rev-list --count "$base..$head" 2>/dev/null || echo 0) commit(s)"
+fi
+workspace=$3
+package="$workspace/review-$base..$head.diff"
+
+mkdir -p "$workspace"
+{
+    echo "=== Commits ==="
+    echo "$commits"
+    echo
+    echo "=== Stat ==="
+    git diff --stat "$base" "$head"
+    echo
+    echo "=== Deleted files (content left out) ==="
+    git diff --name-only --diff-filter=D "$base" "$head"
+    echo
+    echo "=== Diff of the added, changed and moved files ==="
+    git diff -U10 --diff-filter=AMR "$base" "$head"
+} > "$package"
+echo "wrote $package: $count, head $head, $(wc -c < "$package") bytes"

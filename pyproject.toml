@@ -1,0 +1,205 @@
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"
+
+[project]
+name = "mystgate"
+version = "0.1.0"
+description = "CLI tool to generate and manage WireGuard configurations from the Mysterium VPN API."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "click>=8.5.1",
+    "cryptography>=50.0.2",
+    "httpx[socks]>=0.28.1",
+    "pydantic>=2.14.4",
+    "pydantic-settings>=2.16.3",
+]
+
+[project.scripts]
+mystgate = "mystgate.__main__:Mystgate.run"
+
+[dependency-groups]
+test = [
+    "hypothesis>=6.170.17",
+    "pytest>=9.2.0",
+    "pytest-randomly>=5.1.0",
+    "pytest-socket>=0.8.1",
+    "respx>=0.23.1",
+]
+dev = [
+    { include-group = "test" },
+    "import-linter>=2.17",
+    "mypy>=2.4.1",
+    "pre-commit>=4.7.0",
+    "ruff>=0.17.6",
+]
+
+[tool.uv.build-backend]
+module-name = "mystgate"
+module-root = ""
+
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "S", "SIM", "RUF", "PT", "SLF", "TC004", "PGH004", "TID251", "D401"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"dataclasses".msg = "Use a pydantic model (AGENTS.md, Rules of the code)."
+"subprocess.run".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"subprocess.Popen".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"subprocess.call".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"subprocess.check_call".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"subprocess.check_output".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"subprocess.getoutput".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"subprocess.getstatusoutput".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"os.system".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"os.popen".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"asyncio.create_subprocess_exec".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+"asyncio.create_subprocess_shell".msg = "mystgate starts no process (AGENTS.md, rule 13)."
+
+[tool.ruff.lint.per-file-ignores]
+"tests/stacks/docker_stack.py" = ["TID251", "S603", "S607"]
+"tests/**" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["mystgate", "tests"]
+strict = true
+warn_unreachable = true
+disallow_any_unimported = true
+pretty = true
+show_error_codes = true
+
+[tool.importlinter]
+root_packages = ["mystgate", "tests"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "core.utils imports nothing of mystgate"
+type = "forbidden"
+source_modules = ["mystgate.core.utils"]
+forbidden_modules = ["mystgate"]
+ignore_imports = ["mystgate.core.utils.** -> mystgate.core.utils.**"]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "core.exceptions imports nothing of mystgate but core.utils"
+type = "forbidden"
+source_modules = ["mystgate.core.exceptions"]
+forbidden_modules = [
+    "mystgate.core.config",
+    "mystgate.core.logging",
+    "mystgate.core.wireguard",
+    "mystgate.core.mysterium",
+    "mystgate.core.vpn",
+    "mystgate.commands",
+]
+
+[[tool.importlinter.contracts]]
+name = "core.config imports nothing of mystgate but core.utils and core.exceptions"
+type = "forbidden"
+source_modules = ["mystgate.core.config"]
+forbidden_modules = [
+    "mystgate.core.logging",
+    "mystgate.core.wireguard",
+    "mystgate.core.mysterium",
+    "mystgate.core.vpn",
+    "mystgate.commands",
+]
+
+[[tool.importlinter.contracts]]
+name = "core.logging imports nothing of mystgate but core.utils and core.exceptions"
+type = "forbidden"
+source_modules = ["mystgate.core.logging"]
+forbidden_modules = [
+    "mystgate.core.config",
+    "mystgate.core.wireguard",
+    "mystgate.core.mysterium",
+    "mystgate.core.vpn",
+    "mystgate.commands",
+]
+
+[[tool.importlinter.contracts]]
+name = "core.wireguard imports nothing of mystgate but core.utils and core.exceptions"
+type = "forbidden"
+source_modules = ["mystgate.core.wireguard"]
+forbidden_modules = [
+    "mystgate.core.config",
+    "mystgate.core.logging",
+    "mystgate.core.mysterium",
+    "mystgate.core.vpn",
+    "mystgate.commands",
+]
+
+[[tool.importlinter.contracts]]
+name = "core.mysterium imports nothing of mystgate but core.config, core.logging, core.utils and core.exceptions"
+type = "forbidden"
+source_modules = ["mystgate.core.mysterium"]
+forbidden_modules = [
+    "mystgate.core.wireguard",
+    "mystgate.core.vpn",
+    "mystgate.commands",
+]
+
+[[tool.importlinter.contracts]]
+name = "core.vpn imports neither click, httpx nor cryptography"
+type = "forbidden"
+source_modules = ["mystgate.core.vpn"]
+forbidden_modules = [
+    "click",
+    "httpx",
+    "cryptography",
+    "mystgate.commands",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "core never imports commands"
+type = "forbidden"
+source_modules = ["mystgate.core"]
+forbidden_modules = ["mystgate.commands"]
+
+[[tool.importlinter.contracts]]
+name = "commands is imported by __main__ and tests alone"
+type = "protected"
+protected_modules = ["mystgate.commands"]
+allowed_importers = ["mystgate.__main__", "tests"]
+
+[[tool.importlinter.contracts]]
+name = "httpx is imported from core.mysterium alone"
+type = "protected"
+protected_modules = ["httpx"]
+allowed_importers = ["mystgate.core.mysterium", "tests"]
+
+[[tool.importlinter.contracts]]
+name = "cryptography is imported from core.wireguard alone"
+type = "protected"
+protected_modules = ["cryptography"]
+allowed_importers = ["mystgate.core.wireguard"]
+
+[[tool.importlinter.contracts]]
+name = "mystgate never imports tests"
+type = "forbidden"
+source_modules = ["mystgate"]
+forbidden_modules = ["tests"]
+
+[[tool.importlinter.contracts]]
+name = "the e2e tests never import mystgate"
+type = "forbidden"
+source_modules = ["tests.e2e"]
+forbidden_modules = ["mystgate"]
+
+[tool.pytest]
+minversion = "9.0"
+testpaths = ["tests/unit"]
+tmp_path_retention_policy = "none"
+markers = ["e2e: runs mystgate in a throwaway stack"]
+addopts = ["-ra"]
+strict = true
+filterwarnings = [
+    "error",
+    "ignore:A test tried to use socket\\.:UserWarning:pytest_socket",
+]
